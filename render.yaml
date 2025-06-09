@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: brickpro-sheet-bot
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "bash start.sh"
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_SHEET_TAB_NAME
+        sync: false
+      - key: CHECK_INTERVAL_SECONDS
+        sync: false
+    autoDeploy: true

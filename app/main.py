@@ -1,10 +1,35 @@
-from flask import Flask, request
+import os
+import time
+import gspread
+from telegram import Bot
+from oauth2client.service_account import ServiceAccountCredentials
 
-app = Flask(__name__)
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+SHEET_TAB = os.getenv("GOOGLE_SHEET_TAB_NAME")
+INTERVAL = int(os.getenv("CHECK_INTERVAL_SECONDS", "300"))
 
-@app.route("/")
-def home():
-    return "BrickPro API is running."
+bot = Bot(token=TELEGRAM_TOKEN)
+
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+client = gspread.authorize(creds)
+sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
+
+seen = set()
+
+def check_updates():
+    global seen
+    rows = sheet.get_all_records()
+    for row in rows:
+        key = tuple(row.items())
+        if key not in seen:
+            seen.add(key)
+            message = "\n".join([f"{k}: {v}" for k, v in row.items()])
+            bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=f"📩 New Partner Request:\n{message}")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    while True:
+        check_updates()
+        time.sleep(INTERVAL)
